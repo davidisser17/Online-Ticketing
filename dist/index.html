@@ -11,12 +11,28 @@
       rel="stylesheet"
     />
     <title>Concert Ticket Jastip</title>
+    <!-- GitHub Pages SPA: restore URL after 404 redirect -->
+    <script>
+      (function () {
+        var redirect = sessionStorage.getItem('ghpages_redirect');
+        if (redirect) {
+          sessionStorage.removeItem('ghpages_redirect');
+          try {
+            var data = JSON.parse(redirect);
+            var url = data.path + (data.search || '') + (data.hash || '');
+            if (url && url !== '/') {
+              window.history.replaceState(null, null, '/Online-Ticketing' + url);
+            }
+          } catch (e) {}
+        }
+      })();
+    </script>
     <meta
       name="description"
       content="Layanan jasa titip tiket konser terpercaya. Pesan tiket konser favoritmu dengan mudah dan aman."
     />
-    <script type="module" crossorigin src="/assets/index-C52J-PjT.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-CmjCZPfv.css">
+    <script type="module" crossorigin src="/Online-Ticketing/assets/index-CFKfOk7z.js"></script>
+    <link rel="stylesheet" crossorigin href="/Online-Ticketing/assets/index-DOKnaw3R.css">
   </head>
   <body>
     <div id="root"></div>

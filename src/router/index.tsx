@@ -43,6 +43,9 @@ function Lazy({ children }: { children: React.ReactNode }) {
 }
 
 // ── Router ─────────────────────────────────────────────────────────────────
+// basename diperlukan untuk GitHub Pages deployment di /Online-Ticketing/
+const basename = import.meta.env.PROD ? '/Online-Ticketing' : '/';
+
 export const router = createBrowserRouter([
   // ── Landing routes ──────────────────────────────────────────────────────
   {
@@ -182,4 +185,4 @@ export const router = createBrowserRouter([
       </Lazy>
     ),
   },
-]);
+], { basename });
