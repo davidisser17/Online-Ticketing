@@ -1,1 +1,0 @@
-import{a as r}from"./api-CRQbBYM_.js";const s=e=>r.post("/orders",e),o=(e,t)=>r.get("/orders/track",{params:{orderNumber:e,whatsapp:t}}),n=e=>r.post(`/orders/${e}/payment-token`);export{o as a,s as c,n as g};
