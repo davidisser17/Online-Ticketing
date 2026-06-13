@@ -317,6 +317,8 @@ export const MOCK_INTERESTS: Interest[] = [
 export const MOCK_ADMIN = {
   username: 'admin',
   password: 'admin123',
-  token: 'mock-jwt-token-admin-2025',
+  // Token berbentuk JWT valid (header.payload.signature) dengan exp jauh di masa depan (2099)
+  // payload: { sub: "user-001", username: "admin", exp: 4102444800 }
+  token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTAwMSIsInVzZXJuYW1lIjoiYWRtaW4iLCJleHAiOjQxMDI0NDQ4MDB9.mock_signature_not_verified',
   user: { id: 'user-001', username: 'admin' },
 };

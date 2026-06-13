@@ -1,0 +1,1 @@
+import{a as r}from"./index-Bv0qEC4o.js";const o=s=>r.post("/orders",s),d=(s,t)=>r.get("/orders/track",{params:{orderNumber:s,whatsapp:t}}),c=s=>r.post(`/orders/${s}/payment-token`),n=s=>r.get("/cms/orders",{params:s}),p=s=>r.get(`/cms/orders/${s}`),m=(s,t,e)=>r.patch(`/cms/orders/${s}/status`,{status:t,note:e});export{d as a,n as b,o as c,p as d,c as g,m as u};
