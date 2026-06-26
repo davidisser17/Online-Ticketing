@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,6 +15,7 @@ import Input from '@/components/common/Input';
 import Button from '@/components/common/Button';
 import Select from '@/components/common/Select';
 import Textarea from '@/components/common/Textarea';
+import ImageUploader from '@/components/cms/ImageUploader';
 import type { Concert } from '@/types';
 
 // ── Schema ────────────────────────────────────────────────────────────────
@@ -36,7 +37,6 @@ const concertSchema = z.object({
   maxTicketsPerOrder: z.coerce.number().min(1).max(10),
   status: z.enum(['Akan Datang', 'Berlangsung', 'Selesai']),
   terms: z.string().optional(),
-  posterUrlsRaw: z.string().optional(), // newline-separated URLs
   ticketCategories: z.array(categorySchema).min(1, 'Minimal 1 kategori tiket'),
 });
 type ConcertFormValues = z.infer<typeof concertSchema>;
@@ -59,6 +59,11 @@ function toDatetimeLocal(iso: string): string {
   }
 }
 
+// Generate temp ID untuk concert baru (dipakai sebagai folder storage)
+function genTempId() {
+  return `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────
 export default function CmsConcertFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -66,6 +71,13 @@ export default function CmsConcertFormPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const addToast = useUiStore((s) => s.addToast);
+
+  // Untuk concert baru, pakai temp ID sebagai folder storage
+  const tempIdRef = useRef(genTempId());
+  const concertStorageId = isEdit ? (id ?? tempIdRef.current) : tempIdRef.current;
+
+  // Poster URLs dikelola di state terpisah (ImageUploader callback)
+  const [posterUrls, setPosterUrls] = useState<string[]>([]);
 
   const { data: existing, isLoading: loadingConcert } = useQuery({
     queryKey: ['concert', id],
@@ -78,7 +90,6 @@ export default function CmsConcertFormPage() {
     handleSubmit,
     reset,
     control,
-    watch,
     formState: { errors },
   } = useForm<ConcertFormValues>({
     resolver: zodResolver(concertSchema),
@@ -87,7 +98,6 @@ export default function CmsConcertFormPage() {
       jastipFee: 0,
       quota: 50,
       maxTicketsPerOrder: 4,
-      posterUrlsRaw: '',
       ticketCategories: [{ name: '', price: 0 }],
     },
   });
@@ -97,7 +107,7 @@ export default function CmsConcertFormPage() {
     name: 'ticketCategories',
   });
 
-  // Populate form when editing
+  // Populate form + poster URLs when editing
   useEffect(() => {
     const c: Concert | undefined = existing?.data.data;
     if (c) {
@@ -113,24 +123,18 @@ export default function CmsConcertFormPage() {
         maxTicketsPerOrder: c.maxTicketsPerOrder,
         status: c.status,
         terms: c.terms ?? '',
-        posterUrlsRaw: (c.posterUrls ?? []).join('\n'),
         ticketCategories: c.ticketCategories.map((tc) => ({
           id: tc.id,
           name: tc.name,
           price: tc.price,
         })),
       });
+      setPosterUrls(c.posterUrls ?? []);
     }
   }, [existing, reset]);
 
   const mutation = useMutation({
     mutationFn: (payload: ConcertFormValues) => {
-      // Buat payload sesuai tipe ConcertPayload (tanpa id, timestamps, dll)
-      const posterUrls = (payload.posterUrlsRaw ?? '')
-        .split('\n')
-        .map((u) => u.trim())
-        .filter(Boolean);
-
       const data: ConcertPayload = {
         artistName: payload.artistName,
         description: payload.description,
@@ -143,7 +147,7 @@ export default function CmsConcertFormPage() {
         maxTicketsPerOrder: payload.maxTicketsPerOrder,
         status: payload.status,
         terms: payload.terms,
-        posterUrls,
+        posterUrls, // dari state ImageUploader
         ticketCategories: payload.ticketCategories.map((tc, i) => ({
           id: tc.id ?? `cat-${Date.now()}-${i}`,
           name: tc.name,
@@ -155,15 +159,12 @@ export default function CmsConcertFormPage() {
     onSuccess: () => {
       addToast({
         type: 'success',
-        message: isEdit
-          ? 'Konser berhasil diperbarui.'
-          : 'Konser berhasil ditambahkan.',
+        message: isEdit ? 'Konser berhasil diperbarui.' : 'Konser berhasil ditambahkan.',
       });
       void qc.invalidateQueries({ queryKey: ['cms-concerts'] });
       navigate('/cms/concerts');
     },
-    onError: () =>
-      addToast({ type: 'error', message: 'Gagal menyimpan konser.' }),
+    onError: () => addToast({ type: 'error', message: 'Gagal menyimpan konser.' }),
   });
 
   if (isEdit && loadingConcert) {
@@ -185,6 +186,17 @@ export default function CmsConcertFormPage() {
       <h1 className="text-lg font-semibold text-gray-900">
         {isEdit ? 'Edit Konser' : 'Tambah Konser'}
       </h1>
+
+      {/* Gambar & Cover — di atas supaya langsung terlihat */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-3">
+        <h2 className="font-medium text-gray-700 text-sm">Gambar & Cover</h2>
+        <ImageUploader
+          concertId={concertStorageId}
+          value={posterUrls}
+          onChange={setPosterUrls}
+          maxFiles={5}
+        />
+      </div>
 
       {/* Info dasar */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-4">
@@ -274,9 +286,7 @@ export default function CmsConcertFormPage() {
           </Button>
         </div>
         {errors.ticketCategories?.root && (
-          <p className="text-sm text-red-500">
-            {errors.ticketCategories.root.message}
-          </p>
+          <p className="text-sm text-red-500">{errors.ticketCategories.root.message}</p>
         )}
         {fields.map((field, idx) => (
           <div key={field.id} className="flex items-end gap-3">
@@ -307,32 +317,6 @@ export default function CmsConcertFormPage() {
             )}
           </div>
         ))}
-      </div>
-
-      {/* Gambar & Cover */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-3">
-        <h2 className="font-medium text-gray-700 text-sm">Gambar & Cover</h2>
-        <Textarea
-          label="URL Gambar / Poster"
-          rows={3}
-          helperText="Masukkan satu URL per baris. Gambar pertama akan digunakan sebagai cover di landing page."
-          placeholder={'https://example.com/poster1.jpg\nhttps://example.com/poster2.jpg'}
-          {...register('posterUrlsRaw')}
-        />
-        {/* Preview gambar pertama */}
-        {watch('posterUrlsRaw')?.split('\n')[0]?.trim() && (
-          <div className="mt-2">
-            <p className="text-xs text-gray-500 mb-1.5">Preview cover:</p>
-            <img
-              src={watch('posterUrlsRaw')!.split('\n')[0].trim()}
-              alt="Preview poster"
-              className="w-32 h-44 object-cover rounded-lg border border-gray-200"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          </div>
-        )}
       </div>
 
       {/* Syarat */}
