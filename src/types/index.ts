@@ -66,6 +66,9 @@ export interface Order {
   customerName: string;
   customerWhatsapp: string;
   customerEmail: string;
+  customerNik?: string;
+  customerBirthPlace?: string;
+  customerBirthDate?: string;
   ticketCategoryId: string;
   ticketCategory?: TicketCategory;
   ticketQty: number;

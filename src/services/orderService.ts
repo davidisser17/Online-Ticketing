@@ -55,6 +55,9 @@ export interface CreateOrderDto {
   customerName: string;
   customerWhatsapp: string;
   customerEmail: string;
+  customerNik?: string;
+  customerBirthPlace?: string;
+  customerBirthDate?: string;
   notes?: string;
 }
 
@@ -100,6 +103,9 @@ export async function createOrder(
     customerName: data.customerName,
     customerWhatsapp: data.customerWhatsapp,
     customerEmail: data.customerEmail,
+    customerNik: data.customerNik ?? null,
+    customerBirthPlace: data.customerBirthPlace ?? null,
+    customerBirthDate: data.customerBirthDate ?? null,
     ticketCategoryId: data.ticketCategoryId,
     ticketCategory: category,
     ticketQty: data.ticketQty,
@@ -112,7 +118,7 @@ export async function createOrder(
       {
         status: 'Menunggu Pembayaran' as OrderStatus,
         timestamp: new Date().toISOString(),
-        note: 'Pesanan dibuat',
+        note: 'Pesanan masuk antrian',
       },
     ],
     ticketUrl: null,

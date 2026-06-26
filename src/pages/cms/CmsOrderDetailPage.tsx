@@ -77,6 +77,12 @@ export default function CmsOrderDetailPage() {
         <div className="grid grid-cols-2 gap-y-2 text-sm">
           <span className="text-gray-500">Nama</span>
           <span className="font-medium text-gray-800">{order.customerName}</span>
+          <span className="text-gray-500">NIK</span>
+          <span className="font-mono text-gray-800">{order.customerNik ?? '—'}</span>
+          <span className="text-gray-500">Tempat Lahir</span>
+          <span className="font-medium text-gray-800">{order.customerBirthPlace ?? '—'}</span>
+          <span className="text-gray-500">Tanggal Lahir</span>
+          <span className="font-medium text-gray-800">{order.customerBirthDate ?? '—'}</span>
           <span className="text-gray-500">WhatsApp</span>
           <a href={`https://wa.me/${order.customerWhatsapp}`} target="_blank" rel="noopener noreferrer"
             className="font-medium text-green-600 hover:underline">{order.customerWhatsapp}</a>

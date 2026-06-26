@@ -10,10 +10,6 @@ const ConcertDetailPage = React.lazy(
   () => import('@/pages/landing/ConcertDetailPage'),
 );
 const OrderFormPage = React.lazy(() => import('@/pages/landing/OrderFormPage'));
-const PaymentPage = React.lazy(() => import('@/pages/landing/PaymentPage'));
-const PaymentSuccessPage = React.lazy(
-  () => import('@/pages/landing/PaymentSuccessPage'),
-);
 const TrackOrderPage = React.lazy(
   () => import('@/pages/landing/TrackOrderPage'),
 );
@@ -72,22 +68,6 @@ export const router = createBrowserRouter([
         element: (
           <Lazy>
             <OrderFormPage />
-          </Lazy>
-        ),
-      },
-      {
-        path: '/payment/:orderId',
-        element: (
-          <Lazy>
-            <PaymentPage />
-          </Lazy>
-        ),
-      },
-      {
-        path: '/payment/:orderId/success',
-        element: (
-          <Lazy>
-            <PaymentSuccessPage />
           </Lazy>
         ),
       },
