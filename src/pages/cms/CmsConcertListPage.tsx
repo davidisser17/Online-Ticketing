@@ -1,15 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getConcerts } from '@/services/concertService';
+import { getConcerts, deleteConcert } from '@/services/concertService';
 import { useUiStore } from '@/store/uiStore';
 import { formatDate, formatCurrency } from '@/utils/formatters';
 import Button from '@/components/common/Button';
 import StatusLabel from '@/components/common/StatusLabel';
 import EmptyState from '@/components/common/EmptyState';
 import ErrorState from '@/components/common/ErrorState';
-import apiClient from '@/services/api';
-import type { ApiResponse, Concert } from '@/types';
+import type { Concert } from '@/types';
 
 export default function CmsConcertListPage() {
   const qc = useQueryClient();
@@ -25,8 +24,7 @@ export default function CmsConcertListPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) =>
-      apiClient.delete<ApiResponse<null>>(`/cms/concerts/${id}`),
+    mutationFn: (id: string) => deleteConcert(id),
     onMutate: (id) => setDeletingId(id),
     onSuccess: () => {
       addToast({ type: 'success', message: 'Konser berhasil dihapus.' });

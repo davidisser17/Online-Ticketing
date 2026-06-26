@@ -4,14 +4,18 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getConcertById } from '@/services/concertService';
+import {
+  getConcertById,
+  createConcert,
+  updateConcert,
+  type ConcertPayload,
+} from '@/services/concertService';
 import { useUiStore } from '@/store/uiStore';
-import apiClient from '@/services/api';
 import Input from '@/components/common/Input';
 import Button from '@/components/common/Button';
 import Select from '@/components/common/Select';
 import Textarea from '@/components/common/Textarea';
-import type { ApiResponse, Concert } from '@/types';
+import type { Concert } from '@/types';
 
 // ── Schema ────────────────────────────────────────────────────────────────
 const categorySchema = z.object({
@@ -49,7 +53,9 @@ function toDatetimeLocal(iso: string): string {
     const d = new Date(iso);
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  } catch { return ''; }
+  } catch {
+    return '';
+  }
 }
 
 // ── Component ─────────────────────────────────────────────────────────────
@@ -83,7 +89,10 @@ export default function CmsConcertFormPage() {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({ control, name: 'ticketCategories' });
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'ticketCategories',
+  });
 
   // Populate form when editing
   useEffect(() => {
@@ -111,47 +120,134 @@ export default function CmsConcertFormPage() {
   }, [existing, reset]);
 
   const mutation = useMutation({
-    mutationFn: (payload: ConcertFormValues) =>
-      isEdit
-        ? apiClient.put<ApiResponse<Concert>>(`/cms/concerts/${id}`, payload)
-        : apiClient.post<ApiResponse<Concert>>('/cms/concerts', payload),
+    mutationFn: (payload: ConcertFormValues) => {
+      // Buat payload sesuai tipe ConcertPayload (tanpa id, timestamps, dll)
+      const data: ConcertPayload = {
+        artistName: payload.artistName,
+        description: payload.description,
+        date: new Date(payload.date).toISOString(),
+        venueName: payload.venueName,
+        venueAddress: payload.venueAddress,
+        city: payload.city,
+        jastipFee: payload.jastipFee,
+        quota: payload.quota,
+        maxTicketsPerOrder: payload.maxTicketsPerOrder,
+        status: payload.status,
+        terms: payload.terms,
+        posterUrls: [],
+        ticketCategories: payload.ticketCategories.map((tc, i) => ({
+          id: tc.id ?? `cat-${Date.now()}-${i}`,
+          name: tc.name,
+          price: tc.price,
+        })),
+      };
+      return isEdit ? updateConcert(id!, data) : createConcert(data);
+    },
     onSuccess: () => {
-      addToast({ type: 'success', message: isEdit ? 'Konser berhasil diperbarui.' : 'Konser berhasil ditambahkan.' });
+      addToast({
+        type: 'success',
+        message: isEdit
+          ? 'Konser berhasil diperbarui.'
+          : 'Konser berhasil ditambahkan.',
+      });
       void qc.invalidateQueries({ queryKey: ['cms-concerts'] });
       navigate('/cms/concerts');
     },
-    onError: () => addToast({ type: 'error', message: 'Gagal menyimpan konser.' }),
+    onError: () =>
+      addToast({ type: 'error', message: 'Gagal menyimpan konser.' }),
   });
 
   if (isEdit && loadingConcert) {
-    return <div className="animate-pulse space-y-4">{[1,2,3].map(i => <div key={i} className="h-12 bg-gray-100 rounded-xl"/>)}</div>;
+    return (
+      <div className="animate-pulse space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-12 bg-gray-100 rounded-xl" />
+        ))}
+      </div>
+    );
   }
 
   return (
-    <form onSubmit={handleSubmit((v) => mutation.mutate(v))} noValidate className="space-y-6 max-w-3xl">
-      <h1 className="text-lg font-semibold text-gray-900">{isEdit ? 'Edit Konser' : 'Tambah Konser'}</h1>
+    <form
+      onSubmit={handleSubmit((v) => mutation.mutate(v))}
+      noValidate
+      className="space-y-6 max-w-3xl"
+    >
+      <h1 className="text-lg font-semibold text-gray-900">
+        {isEdit ? 'Edit Konser' : 'Tambah Konser'}
+      </h1>
 
       {/* Info dasar */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-4">
         <h2 className="font-medium text-gray-700 text-sm">Informasi Konser</h2>
-        <Input label="Nama Artis / Konser" error={errors.artistName?.message} {...register('artistName')} />
-        <Textarea label="Deskripsi" rows={3} error={errors.description?.message} {...register('description')} />
+        <Input
+          label="Nama Artis / Konser"
+          error={errors.artistName?.message}
+          {...register('artistName')}
+        />
+        <Textarea
+          label="Deskripsi"
+          rows={3}
+          error={errors.description?.message}
+          {...register('description')}
+        />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input label="Tanggal & Waktu" type="datetime-local" error={errors.date?.message} {...register('date')} />
-          <Select label="Status" options={statusOptions} error={errors.status?.message} {...register('status')} />
+          <Input
+            label="Tanggal & Waktu"
+            type="datetime-local"
+            error={errors.date?.message}
+            {...register('date')}
+          />
+          <Select
+            label="Status"
+            options={statusOptions}
+            error={errors.status?.message}
+            {...register('status')}
+          />
         </div>
-        <Input label="Nama Venue" error={errors.venueName?.message} {...register('venueName')} />
-        <Input label="Alamat Venue" error={errors.venueAddress?.message} {...register('venueAddress')} />
-        <Input label="Kota" error={errors.city?.message} {...register('city')} />
+        <Input
+          label="Nama Venue"
+          error={errors.venueName?.message}
+          {...register('venueName')}
+        />
+        <Input
+          label="Alamat Venue"
+          error={errors.venueAddress?.message}
+          {...register('venueAddress')}
+        />
+        <Input
+          label="Kota"
+          error={errors.city?.message}
+          {...register('city')}
+        />
       </div>
 
       {/* Jastip & kuota */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-4">
         <h2 className="font-medium text-gray-700 text-sm">Kuota & Jastip</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Input label="Kuota Total" type="number" min={1} error={errors.quota?.message} {...register('quota')} />
-          <Input label="Biaya Jastip (per tiket)" type="number" min={0} error={errors.jastipFee?.message} {...register('jastipFee')} />
-          <Input label="Maks Tiket per Pesanan" type="number" min={1} max={10} error={errors.maxTicketsPerOrder?.message} {...register('maxTicketsPerOrder')} />
+          <Input
+            label="Kuota Total"
+            type="number"
+            min={1}
+            error={errors.quota?.message}
+            {...register('quota')}
+          />
+          <Input
+            label="Biaya Jastip (per tiket)"
+            type="number"
+            min={0}
+            error={errors.jastipFee?.message}
+            {...register('jastipFee')}
+          />
+          <Input
+            label="Maks Tiket per Pesanan"
+            type="number"
+            min={1}
+            max={10}
+            error={errors.maxTicketsPerOrder?.message}
+            {...register('maxTicketsPerOrder')}
+          />
         </div>
       </div>
 
@@ -159,12 +255,19 @@ export default function CmsConcertFormPage() {
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-medium text-gray-700 text-sm">Kategori Tiket</h2>
-          <Button type="button" variant="secondary" size="sm" onClick={() => append({ name: '', price: 0 })}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => append({ name: '', price: 0 })}
+          >
             + Tambah Kategori
           </Button>
         </div>
         {errors.ticketCategories?.root && (
-          <p className="text-sm text-red-500">{errors.ticketCategories.root.message}</p>
+          <p className="text-sm text-red-500">
+            {errors.ticketCategories.root.message}
+          </p>
         )}
         {fields.map((field, idx) => (
           <div key={field.id} className="flex items-end gap-3">
@@ -183,7 +286,13 @@ export default function CmsConcertFormPage() {
               {...register(`ticketCategories.${idx}.price`)}
             />
             {fields.length > 1 && (
-              <Button type="button" variant="danger" size="sm" className="mb-0.5" onClick={() => remove(idx)}>
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                className="mb-0.5"
+                onClick={() => remove(idx)}
+              >
                 ✕
               </Button>
             )}
@@ -193,15 +302,29 @@ export default function CmsConcertFormPage() {
 
       {/* Syarat */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-        <Textarea label="Syarat & Ketentuan (opsional)" rows={3} {...register('terms')} />
+        <Textarea
+          label="Syarat & Ketentuan (opsional)"
+          rows={3}
+          {...register('terms')}
+        />
       </div>
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Button type="submit" variant="primary" size="md" isLoading={mutation.isPending}>
+        <Button
+          type="submit"
+          variant="primary"
+          size="md"
+          isLoading={mutation.isPending}
+        >
           {isEdit ? 'Simpan Perubahan' : 'Tambah Konser'}
         </Button>
-        <Button type="button" variant="secondary" size="md" onClick={() => navigate('/cms/concerts')}>
+        <Button
+          type="button"
+          variant="secondary"
+          size="md"
+          onClick={() => navigate('/cms/concerts')}
+        >
           Batal
         </Button>
       </div>

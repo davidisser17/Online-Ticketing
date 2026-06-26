@@ -1,0 +1,1 @@
+import{j as n,H as t,I as a,J as o}from"./index-9xrqLJDA.js";function l({status:e,className:S=""}){const s=o.includes(e)?t[e]:a[e];return n.jsx("span",{className:`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${s} ${S}`,"aria-label":`Status: ${e}`,children:e})}export{l as S};

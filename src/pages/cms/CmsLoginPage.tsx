@@ -11,7 +11,7 @@ import Input from '@/components/common/Input';
 import Button from '@/components/common/Button';
 
 const loginSchema = z.object({
-  username: z.string().min(1, 'Username wajib diisi'),
+  username: z.string().email('Format email tidak valid').min(1, 'Email wajib diisi'),
   password: z.string().min(1, 'Password wajib diisi'),
 });
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -35,14 +35,17 @@ export default function CmsLoginPage() {
   const mutation = useMutation({
     mutationFn: login,
     onSuccess: (res) => {
-      const { token, user } = res.data.data;
-      storeLogin(token, user);
+      storeLogin(res.token, res.user);
       navigate('/cms', { replace: true });
     },
     onError: (err: unknown) => {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 401) {
-        addToast({ type: 'error', message: 'Username atau password salah.' });
+      const code = (err as { code?: string })?.code;
+      if (
+        code === 'auth/invalid-credential' ||
+        code === 'auth/user-not-found' ||
+        code === 'auth/wrong-password'
+      ) {
+        addToast({ type: 'error', message: 'Email atau password salah.' });
       } else {
         addToast({ type: 'error', message: 'Gagal login. Coba lagi.' });
       }
@@ -69,9 +72,10 @@ export default function CmsLoginPage() {
             className="space-y-5"
           >
             <Input
-              label="Username"
-              placeholder="admin"
-              autoComplete="username"
+              label="Email"
+              type="email"
+              placeholder="admin@jastiptiket.com"
+              autoComplete="email"
               error={errors.username?.message}
               {...register('username')}
             />

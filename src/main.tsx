@@ -4,19 +4,10 @@ import App from './App';
 import './index.css';
 
 async function enableMocking() {
-  // Aktif di DEV, atau di PROD jika VITE_ENABLE_MOCK=true (untuk demo/GitHub Pages)
-  const shouldMock =
-    import.meta.env.DEV || import.meta.env.VITE_ENABLE_MOCK === 'true';
-
-  if (shouldMock) {
+  // MSW hanya aktif di DEV (lokal) — production pakai Firebase langsung
+  if (import.meta.env.DEV) {
     const { worker } = await import('./mocks/browser');
-    return worker.start({
-      onUnhandledRequest: 'bypass',
-      serviceWorker: {
-        // Pastikan path service worker sesuai base URL GitHub Pages
-        url: import.meta.env.BASE_URL + 'mockServiceWorker.js',
-      },
-    });
+    return worker.start({ onUnhandledRequest: 'bypass' });
   }
 }
 

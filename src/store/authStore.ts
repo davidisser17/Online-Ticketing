@@ -1,3 +1,7 @@
+// ============================================================
+// Concert Ticket Jastip — Auth Store (Firebase-aware)
+// ============================================================
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AdminUser, AuthState } from '../types';
@@ -13,17 +17,18 @@ export const useAuthStore = create<AuthState>()(
         const { token } = get();
         if (!token) return true;
         try {
-          // JWT is three base64url segments separated by dots
           const parts = token.split('.');
           if (parts.length !== 3) return true;
 
-          // Decode the payload (second segment)
-          const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+          // Decode JWT payload (works for both Firebase ID tokens and mock tokens)
+          const payload = JSON.parse(
+            atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
+          );
           if (typeof payload.exp !== 'number') return true;
 
-          return payload.exp * 1000 < Date.now();
+          // Tambah 5 menit buffer agar tidak expired tiba-tiba saat request
+          return payload.exp * 1000 < Date.now() + 5 * 60 * 1000;
         } catch {
-          // Malformed token — treat as expired
           return true;
         }
       },
@@ -38,7 +43,6 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: AUTH_STORAGE_KEY,
-      // Only persist token and user; actions are re-created on hydration
       partialize: (state) => ({ token: state.token, user: state.user }),
     },
   ),
