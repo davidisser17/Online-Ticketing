@@ -11,7 +11,6 @@ import {
   updateDoc,
   query,
   where,
-  orderBy,
   serverTimestamp,
   Timestamp,
   arrayUnion,
@@ -194,20 +193,23 @@ export async function getPaymentToken(
 export async function getAllOrders(
   filters?: OrderFilters,
 ): Promise<{ data: { data: Order[] } }> {
-  let q = query(collection(db, COLLECTION), orderBy('createdAt', 'desc'));
+  let q;
 
   if (filters?.status) {
+    // where saja tanpa orderBy untuk menghindari kebutuhan composite index
     q = query(
       collection(db, COLLECTION),
       where('status', '==', filters.status),
-      orderBy('createdAt', 'desc'),
     );
+  } else {
+    q = query(collection(db, COLLECTION));
   }
 
   const snap = await getDocs(q);
-  let orders = snap.docs.map((d) =>
-    fromFirestore(d.id, d.data() as Record<string, unknown>),
-  );
+  let orders = snap.docs
+    .map((d) => fromFirestore(d.id, d.data() as Record<string, unknown>))
+    // Sort terbaru dulu di client-side
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   // Client-side search filter
   if (filters?.search) {

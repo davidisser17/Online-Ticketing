@@ -12,7 +12,6 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy,
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
@@ -47,19 +46,17 @@ export async function getConcerts(params?: {
   let q;
 
   if (params?.status && params.status.length > 0) {
-    q = query(
-      ref,
-      where('status', 'in', params.status),
-      orderBy('date', 'asc'),
-    );
+    // Gunakan where saja tanpa orderBy untuk menghindari kebutuhan composite index
+    q = query(ref, where('status', 'in', params.status));
   } else {
-    q = query(ref, orderBy('date', 'asc'));
+    q = query(ref);
   }
 
   const snap = await getDocs(q);
-  const concerts = snap.docs.map((d) =>
-    fromFirestore(d.id, d.data() as Record<string, unknown>),
-  );
+  const concerts = snap.docs
+    .map((d) => fromFirestore(d.id, d.data() as Record<string, unknown>))
+    // Sort by date ascending di client-side
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return { data: { data: concerts } };
 }
