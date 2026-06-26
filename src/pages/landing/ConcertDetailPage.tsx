@@ -1,10 +1,8 @@
-import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import StatusLabel from '@/components/common/StatusLabel';
 import Button from '@/components/common/Button';
 import ErrorState from '@/components/common/ErrorState';
-import InterestForm from '@/components/landing/InterestForm';
 import { getConcertById } from '@/services/concertService';
 import { formatCurrency, formatDateTime } from '@/utils/formatters';
 import { PUBLIC_DATA_STALE_TIME_MS } from '@/utils/constants';
@@ -393,16 +391,14 @@ function JastipInfoSection({ concert }: JastipInfoProps) {
 
 interface ActionButtonsProps {
   concert: Concert;
-  onInterestClick: () => void;
 }
 
-function ActionButtons({ concert, onInterestClick }: ActionButtonsProps) {
+function ActionButtons({ concert }: ActionButtonsProps) {
   const navigate = useNavigate();
 
   const isFinished = concert.status === 'Selesai';
   const isQuotaFull = concert.remainingQuota === 0;
   const isOrderDisabled = isFinished || isQuotaFull;
-  const isInterestDisabled = isFinished;
 
   return (
     <div className="bg-white border-t border-gray-100 shadow-[0_-2px_8px_rgba(0,0,0,0.06)] md:shadow-none md:border-none md:bg-transparent">
@@ -423,29 +419,16 @@ function ActionButtons({ concert, onInterestClick }: ActionButtonsProps) {
           </div>
         )}
 
-        {/* Buttons */}
-        <div className="flex gap-3">
-          <Button
-            variant="primary"
-            size="lg"
-            disabled={isOrderDisabled}
-            className="flex-1"
-            onClick={() => navigate(`/concert/${concert.id}/order`)}
-            aria-label="Pesan jastip tiket konser ini"
-          >
-            Pesan Jastip
-          </Button>
-          <Button
-            variant="secondary"
-            size="lg"
-            disabled={isInterestDisabled}
-            className="flex-1"
-            onClick={onInterestClick}
-            aria-label="Daftarkan minat untuk konser ini"
-          >
-            Daftarkan Minat
-          </Button>
-        </div>
+        <Button
+          variant="primary"
+          size="lg"
+          disabled={isOrderDisabled}
+          className="w-full"
+          onClick={() => navigate(`/concert/${concert.id}/order`)}
+          aria-label="Pesan jastip tiket konser ini"
+        >
+          Pesan Jastip
+        </Button>
       </div>
     </div>
   );
@@ -457,7 +440,6 @@ function ActionButtons({ concert, onInterestClick }: ActionButtonsProps) {
 
 export default function ConcertDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [showInterestModal, setShowInterestModal] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['concert', id],
@@ -520,28 +502,14 @@ export default function ConcertDetailPage() {
 
         {/* Action buttons — normal flow on desktop */}
         <div className="hidden md:block">
-          <ActionButtons
-            concert={concert}
-            onInterestClick={() => setShowInterestModal(true)}
-          />
+          <ActionButtons concert={concert} />
         </div>
       </div>
 
       {/* Action buttons — sticky bottom on mobile */}
       <div className="fixed bottom-0 left-0 right-0 md:hidden z-30">
-        <ActionButtons
-          concert={concert}
-          onInterestClick={() => setShowInterestModal(true)}
-        />
+        <ActionButtons concert={concert} />
       </div>
-
-      {/* InterestForm modal */}
-      <InterestForm
-        concertId={concert.id}
-        concertName={concert.artistName}
-        isOpen={showInterestModal}
-        onClose={() => setShowInterestModal(false)}
-      />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   serverTimestamp,
   Timestamp,
   arrayUnion,
+  increment,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Order, OrderStatus } from '@/types';
@@ -129,9 +130,10 @@ export async function createOrder(
 
   const ref = await addDoc(collection(db, COLLECTION), orderData);
 
-  // Kurangi remainingQuota konser
+  // Kurangi remainingQuota dan tambah interestCount di konser
   await updateDoc(doc(db, 'concerts', data.concertId), {
     remainingQuota: concert.remainingQuota - data.ticketQty,
+    interestCount: increment(1),
     updatedAt: serverTimestamp(),
   });
 
