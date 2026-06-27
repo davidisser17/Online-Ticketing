@@ -130,9 +130,9 @@ export async function createOrder(
 
   const ref = await addDoc(collection(db, COLLECTION), orderData);
 
-  // Kurangi remainingQuota dan tambah interestCount di konser
+  // Kurangi remainingQuota dan tambah interestCount di konser (atomic)
   await updateDoc(doc(db, 'concerts', data.concertId), {
-    remainingQuota: concert.remainingQuota - data.ticketQty,
+    remainingQuota: increment(-data.ticketQty),
     interestCount: increment(1),
     updatedAt: serverTimestamp(),
   });
