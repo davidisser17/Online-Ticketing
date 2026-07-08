@@ -9,9 +9,6 @@ import {
   query,
   where,
   serverTimestamp,
-  updateDoc,
-  doc,
-  increment,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Interest } from '@/types';
@@ -59,10 +56,8 @@ export async function registerInterest(
     createdAt: serverTimestamp(),
   });
 
-  // Naikkan interestCount di konser
-  await updateDoc(doc(db, 'concerts', concertId), {
-    interestCount: increment(1),
-  });
+  // interestCount = tiket terjual (quota - remainingQuota), bukan jumlah pendaftar minat
+  // Jadi registerInterest TIDAK increment interestCount
 
   const interest: Interest = {
     id: ref.id,

@@ -32,7 +32,11 @@ const orderSchema = z.object({
   customerBirthPlace: z.string().min(1, 'Tempat lahir wajib diisi').max(100),
   customerBirthDate: z.string().min(1, 'Tanggal lahir wajib diisi'),
   ticketCategoryId: z.string().min(1, 'Pilih kategori tiket'),
-  ticketQty: z.number().int().min(1),
+  ticketQty: z
+    .number({ invalid_type_error: 'Jumlah tiket wajib diisi' })
+    .int('Jumlah tiket harus bilangan bulat')
+    .min(1, 'Minimal 1 tiket')
+    .max(4, 'Maksimal 4 tiket per pesanan'), // batas sistem; UI akan membatasi lebih ketat jika maxTicketsPerOrder < 4
   notes: z.string().max(500).optional(),
 });
 
@@ -199,7 +203,9 @@ export default function OrderFormPage() {
     onError: (error: unknown) => {
       const msg = (error as { message?: string })?.message ?? '';
       if (msg.includes('Kuota')) {
-        setError('ticketQty', { message: 'Kuota tidak mencukupi' });
+        setError('ticketQty', {
+          message: `Kuota tidak mencukupi. Sisa kuota saat ini ${concert?.remainingQuota ?? 0} tiket.`,
+        });
       } else {
         addToast({ type: 'error', message: 'Gagal membuat pesanan. Silakan coba lagi.' });
       }
@@ -328,7 +334,7 @@ export default function OrderFormPage() {
                       label="Jumlah Tiket"
                       type="number"
                       min={1}
-                      max={Math.min(concert.maxTicketsPerOrder, concert.remainingQuota)}
+                      max={Math.min(4, concert.maxTicketsPerOrder, concert.remainingQuota)}
                       error={errors.ticketQty?.message}
                       {...register('ticketQty', { valueAsNumber: true })}
                     />

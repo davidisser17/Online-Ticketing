@@ -131,9 +131,10 @@ export async function createOrder(
   const ref = await addDoc(collection(db, COLLECTION), orderData);
 
   // Kurangi remainingQuota dan tambah interestCount di konser (atomic)
+  // interestCount = tiket terjual = quota - remainingQuota
   await updateDoc(doc(db, 'concerts', data.concertId), {
     remainingQuota: increment(-data.ticketQty),
-    interestCount: increment(1),
+    interestCount: increment(data.ticketQty),
     updatedAt: serverTimestamp(),
   });
 
@@ -264,11 +265,29 @@ export async function updateOrderStatus(
     note: note ?? null,
   };
 
+  // Ambil data order untuk rollback kuota jika dibatalkan
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error('Pesanan tidak ditemukan');
+  const orderData = snap.data() as Record<string, unknown>;
+  const previousStatus = orderData.status as OrderStatus;
+
   await updateDoc(ref, {
     status,
     updatedAt: serverTimestamp(),
     statusHistory: arrayUnion(historyEntry),
   });
+
+  // Jika dibatalkan, kembalikan kuota dan kurangi interestCount
+  if (status === 'Dibatalkan' && previousStatus !== 'Dibatalkan') {
+    const concertId = orderData.concertId as string;
+    const ticketQty = orderData.ticketQty as number;
+    
+    await updateDoc(doc(db, 'concerts', concertId), {
+      remainingQuota: increment(ticketQty),
+      interestCount: increment(-ticketQty),
+      updatedAt: serverTimestamp(),
+    });
+  }
 
   return getOrderById(id);
 }
