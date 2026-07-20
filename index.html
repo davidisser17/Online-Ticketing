@@ -21,7 +21,8 @@
             var data = JSON.parse(redirect);
             var url = data.path + (data.search || '') + (data.hash || '');
             if (url && url !== '/') {
-              window.history.replaceState(null, null, '/Online-Ticketing' + url);
+              var base = '%BASE_URL%'.replace(/\/$/, '');
+              window.history.replaceState(null, null, base + url);
             }
           } catch (e) {}
         }
