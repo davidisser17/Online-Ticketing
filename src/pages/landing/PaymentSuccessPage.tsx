@@ -34,14 +34,8 @@ export default function PaymentSuccessPage() {
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
-            to="/track"
-            className={buttonVariants({ variant: 'primary', size: 'md' })}
-          >
-            Lacak Pesanan
-          </Link>
-          <Link
             to="/"
-            className={buttonVariants({ variant: 'secondary', size: 'md' })}
+            className={buttonVariants({ variant: 'primary', size: 'md' })}
           >
             Kembali ke Beranda
           </Link>

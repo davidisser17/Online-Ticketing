@@ -138,8 +138,15 @@ export async function createOrder(
     updatedAt: serverTimestamp(),
   });
 
-  const snap = await getDoc(ref);
-  const order = fromFirestore(snap.id, snap.data() as Record<string, unknown>);
+  // Konstruksi order dari data lokal — hindari getDoc(ref) karena
+  // publik tidak punya izin read ke collection orders.
+  const now = new Date().toISOString();
+  const order: Order = {
+    ...orderData,
+    id: ref.id,
+    createdAt: now,
+    updatedAt: now,
+  };
 
   // Attach concert snapshot untuk tampilan
   order.concert = {

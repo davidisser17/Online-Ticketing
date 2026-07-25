@@ -201,6 +201,7 @@ export default function OrderFormPage() {
   const mutation = useMutation({
     mutationFn: (data: OrderFormValues) => createOrder({ ...data, concertId: id! }),
     onError: (error: unknown) => {
+      console.error('[createOrder] error:', error);
       const msg = (error as { message?: string })?.message ?? '';
       if (msg.includes('Kuota')) {
         setError('ticketQty', {
