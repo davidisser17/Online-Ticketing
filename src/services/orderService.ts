@@ -150,6 +150,7 @@ export async function createOrder(
     customerNik: orderData.customerNik ?? undefined,
     customerBirthPlace: orderData.customerBirthPlace ?? undefined,
     customerBirthDate: orderData.customerBirthDate ?? undefined,
+    notes: orderData.notes ?? undefined,
     ticketUrl: orderData.ticketUrl ?? undefined,
     pickupInfo: orderData.pickupInfo ?? undefined,
   };
