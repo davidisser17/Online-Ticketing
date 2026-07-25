@@ -140,12 +140,18 @@ export async function createOrder(
 
   // Konstruksi order dari data lokal — hindari getDoc(ref) karena
   // publik tidak punya izin read ke collection orders.
+  // Konversi null → undefined agar sesuai dengan type Order.
   const now = new Date().toISOString();
   const order: Order = {
     ...orderData,
     id: ref.id,
     createdAt: now,
     updatedAt: now,
+    customerNik: orderData.customerNik ?? undefined,
+    customerBirthPlace: orderData.customerBirthPlace ?? undefined,
+    customerBirthDate: orderData.customerBirthDate ?? undefined,
+    ticketUrl: orderData.ticketUrl ?? undefined,
+    pickupInfo: orderData.pickupInfo ?? undefined,
   };
 
   // Attach concert snapshot untuk tampilan
